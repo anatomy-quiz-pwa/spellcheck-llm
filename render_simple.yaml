@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: spellcheck-llm-simple
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements_simple.txt
+    startCommand: streamlit run app_streamlit_cloud_simple.py --server.port $PORT --server.address 0.0.0.0
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: PASSWORD
+        value: admin123
