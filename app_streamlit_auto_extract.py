@@ -665,26 +665,41 @@ with st.sidebar:
 if use_gs:
     if not HAVE_GS:
         st.error("❌ 未安裝 gspread / google-auth：`pip install gspread google-auth`")
-        st.stop()
-    
-    # 自動使用預設 JSON 文件
-    if os.path.exists(DEFAULT_JSON_PATH):
-        try:
-            with open(DEFAULT_JSON_PATH, 'r', encoding='utf-8') as f:
-                creds_json = json.load(f)
-            ws = open_worksheet(creds_json, sheet_url, ws_name)
-            termbase = read_master_from_ws(ws)
-            st.success(f"✅ 已自動連線：{ws.spreadsheet.title} / {ws.title}")
-        except Exception as e:
-            st.error(f"❌ 自動連線 Google Sheets 失敗：{e}")
-            st.info("ℹ️ 請檢查 JSON 文件或手動上傳憑證。")
-            ws = None
-            termbase = standardize_master(pd.DataFrame())
-    else:
-        st.error(f"❌ 找不到預設 JSON 文件：{DEFAULT_JSON_PATH}")
-        st.info("ℹ️ 請手動上傳 JSON 憑證文件。")
+        st.info("ℹ️ 將使用本地詞庫模式")
+        use_gs = False
         ws = None
         termbase = standardize_master(pd.DataFrame())
+    else:
+        # 自動使用預設 JSON 文件
+        if os.path.exists(DEFAULT_JSON_PATH):
+            try:
+                with open(DEFAULT_JSON_PATH, 'r', encoding='utf-8') as f:
+                    creds_json = json.load(f)
+                ws = open_worksheet(creds_json, sheet_url, ws_name)
+                termbase = read_master_from_ws(ws)
+                st.success(f"✅ 已自動連線：{ws.spreadsheet.title} / {ws.title}")
+            except Exception as e:
+                st.error(f"❌ 自動連線 Google Sheets 失敗：{e}")
+                st.info("ℹ️ 將使用本地詞庫模式")
+                ws = None
+                termbase = standardize_master(pd.DataFrame())
+        else:
+            st.warning(f"⚠️ 找不到預設 JSON 文件：{DEFAULT_JSON_PATH}")
+            st.info("ℹ️ 將使用本地詞庫模式，您可以手動上傳 JSON 憑證文件")
+            creds_file = st.file_uploader("上傳 service account JSON", type=["json"], disabled=not use_gs)
+            if creds_file:
+                try:
+                    creds_json = json.load(creds_file)
+                    ws = open_worksheet(creds_json, sheet_url, ws_name)
+                    termbase = read_master_from_ws(ws)
+                    st.success(f"✅ 已連線：{ws.spreadsheet.title} / {ws.title}")
+                except Exception as e:
+                    st.error(f"❌ 連線失敗：{e}")
+                    ws = None
+                    termbase = standardize_master(pd.DataFrame())
+            else:
+                ws = None
+                termbase = standardize_master(pd.DataFrame())
 else:
     ws = None
     termbase = standardize_master(pd.DataFrame())
